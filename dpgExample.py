@@ -2,9 +2,43 @@ import dearpygui.dearpygui as dpg
 import cv2 as cv
 import numpy as np
 
+#     ┌────────────────┐
+#     │cv2.VideoCapture│──┐
+#     └────────────────┘  │
+#           ┌─────┐      vid.Read()──────────────────────────┐
+#     ┌─────│frame│◀──────┘                                  │
+#     │     └─────┘                                          │
+#     │        Flattening -> 32bit float GPU normal data     │
+#     └─▶┌─────────────────────────────────────────────────┐ │
+#        │data = np.flip(frame, 2)                         │ │
+#        │data = data.ravel()                              │ │
+#        │data = np.asfarray(data, dtype='f')              │ │
+#        │texture_data = np.true_divide(data, 255.0)       │ │
+#     ┌──┤frame_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)  │ │
+#     │  │frame_height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)│ │
+#     │  └─────────────────────────────────────────────────┘ │
+#     └─▶┌────────────┐                                      │
+#     ┌──│raw_texture │                                      │
+#     │  └────────────┘                                      │
+# dpg.add_raw_texture()                       ┌──────────────┴────────┐
+#     │  ┌────────────────────────────┐       │While Running:         │
+#     │  │ Context & Viewport Created │──┐    │-recall frame formatter│
+#     │  └────────────────────────────┘  │    └──────────────┬────────┘
+#     │  ┌───────────────────┐           │    ┌───────────┐  │
+#     └─▶│ Texture Register  │◀──────────┤◀───│Render Loop│◀─┘
+#        └───────────────────┘           │    └───────────┘
+#        ┌───────────────────┐           │
+#        │   Image Viewer    │◀──────────┤
+#        └───────────────────┘           │
+#      ┌─────────────────────┐           │
+#      │Setup & Show viewport│◀──────────┘
+#      └─────────────────────┘
+
+
 dpg.create_context()
 dpg.create_viewport(title='Custom Title', width=600, height=800)
 dpg.setup_dearpygui()
+
 
 vid = cv.VideoCapture(0)
 ret, frame = vid.read()
